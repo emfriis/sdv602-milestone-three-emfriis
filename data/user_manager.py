@@ -37,7 +37,7 @@ class UserManager(object):
                                                 "Status":"STATUS_STRING"})
 
         result = self.jsnDrop.create("tblChat",{"PersonID PK":('X'*50),
-                                                "DESNumber":('X'*50),
+                                                "DESID":('X'*50),
                                                 "Chat":('X'*255),
                                                 "Time": self.now_time_stamp()})
         UserManager.this_user_manager = self
@@ -96,7 +96,7 @@ class UserManager(object):
             user_id = UserManager.current_user
             des_screen = UserManager.current_screen
             api_result = self.jsnDrop.store("tblChat",[{'PersonID':user_id,
-                                                        'DESNumber':f'{des_screen}',
+                                                        'DESID':f'{des_screen}',
                                                         'Chat':message,
                                                         'Time': self.now_time_stamp()}])
             if "ERROR" in api_result :
@@ -108,32 +108,15 @@ class UserManager(object):
 
 
 
-    def get_chat(self):
+    def get_chat(self): 
         result = None
 
         if UserManager.current_status == "Logged In":
             des_screen = UserManager.current_screen  
             if not(des_screen is None):
-                api_result = self.jsnDrop.select("tblChat",f"DESNumber = '{des_screen}'")
+                api_result = self.jsnDrop.select("tblChat",f"DESID = '{des_screen}'")
                 if not ('DATA_ERROR' in api_result) :
                     UserManager.chat_list = self.jsnDrop.jsnResult
                     result = UserManager.chat_list
 
         return result
-
-
-    '''
-    def logout(self):
-        result = "Must be 'Logged In' to 'LogOut' "
-        if UserManager.current_status == "Logged In":
-            api_result = self.jsnDrop.store("tblUser",[{"PersonID": UserManager.current_user,
-                                                        "Password": UserManager.current_pass,
-                                                        "Status":"Logged Out"}])
-            if not("ERROR" in api_result):
-                UserManager.current_status = "Logged Out"
-                result = "Logged Out"
-            else:
-                result = self.jsnDrop.jsnStatus
-
-        return result
-    '''

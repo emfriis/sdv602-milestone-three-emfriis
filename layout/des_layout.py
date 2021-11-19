@@ -12,6 +12,9 @@ import shutil
 import glob
 import controller.des.exit_button as exit_button
 import controller.des.new_button as new_button
+import controller.des.chat_button as chat_button
+import threading
+import time
 
 class des_layout(object):
     '''
@@ -46,7 +49,10 @@ class des_layout(object):
         The function to instantiate the elements & layout for des_layout.
         '''
         sg.theme('Dark Blue 3')
-        figure_w, figure_h = 650, 650
+        
+        self.components['chatbox'] = sg.Multiline('Chatbox', autoscroll=True, disabled=True, key='chatbox', size=(50,10))
+        
+        self.components['message'] = sg.Input('', key='message')
         
         self.components['figure_select'] =  sg.Button(button_text = 'Select CSV File')
         
@@ -55,12 +61,16 @@ class des_layout(object):
         self.components['new_button'] = sg.Button(button_text = 'New DES')
         self.controls += [new_button.new]
         
+        self.components['chat_button'] = sg.Button(button_text = 'Send')
+        self.controls += [chat_button.chat]
+        
         self.controls += [exit_button.exit]
         
         self.layout = [
             [self.components['figure_select'],self.components['figure_upload']],
-            [sg.Canvas(size=(figure_w, figure_h), key='-CANVAS-')],
-            [sg.Text('Chat Placeholder')],
+            [sg.Canvas(key='-CANVAS-', size=(450,450))],
+            [self.components['chatbox']],
+            [self.components['message'],self.components['chat_button']],
             [self.components['new_button']]
         ]
     
@@ -86,7 +96,7 @@ class des_layout(object):
         The function to render the current instance of des_layout.
         '''
         if self.layout != []:
-            self.window = sg.Window('Data Explorer', self.layout, grab_anywhere=False, finalize=True)
+            self.window = sg.Window('Data Explorer', self.layout, size=(750,750), grab_anywhere=False, finalize=True)
     
     def listen(self):
         '''
@@ -106,6 +116,7 @@ class des_layout(object):
                         data_plot = self.data_frame.plot(kind='line')
                         fig = plt.gcf()
                         self.figure_agg = self.draw_figure(self.window['-CANVAS-'].TKCanvas, fig)
+                        self.user_manager.current_screen = os.path.basename(file_path)
                 if event == 'Upload CSV File':
                     file_path = sg.PopupGetFile('Please select a data source', file_types=(("CSV Files", "*.csv"),), initial_folder="C:\\")
                     if file_path:
