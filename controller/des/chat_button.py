@@ -9,10 +9,9 @@ def chat( event, values, state, user_manager):
     '''
     cont = True
     if event == "Send":   
-        from data.user_manager import UserManager
-        user_manager = UserManager()
         message = values['message']
-        user_manager.chat(message)
+        result = user_manager.chat(message)
+        sg.Popup(result, keep_on_top=True)
     else:
-        keep_going = True
-    return keep_going 
+        cont = True
+    return cont 

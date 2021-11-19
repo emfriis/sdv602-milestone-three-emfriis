@@ -86,7 +86,7 @@ class UserManager(object):
 
 
 
-    def chat(self,message):
+    def chat(self, message): # I am able to store messages using JSNDrop, but all other messages are deleted, and the latest stored message is duplicated in the database even with a single store command. I was not able to figure this out. 
         result = None
         if UserManager.current_status != "Logged In":
             result = "You must be logged in to chat"
@@ -108,13 +108,13 @@ class UserManager(object):
 
 
 
-    def get_chat(self): 
+    def get_chat(self):
         result = None
 
         if UserManager.current_status == "Logged In":
             des_screen = UserManager.current_screen  
             if not(des_screen is None):
-                api_result = self.jsnDrop.select("tblChat",f"DESID = '{des_screen}'")
+                api_result = self.jsnDrop.select("tblChat",f"DESNumber = '{des_screen}'")
                 if not ('DATA_ERROR' in api_result) :
                     UserManager.chat_list = self.jsnDrop.jsnResult
                     result = UserManager.chat_list

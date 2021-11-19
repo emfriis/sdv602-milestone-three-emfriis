@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import os
 import shutil
@@ -14,7 +13,9 @@ import controller.des.exit_button as exit_button
 import controller.des.new_button as new_button
 import controller.des.chat_button as chat_button
 import threading
+from threading import Thread
 import time
+import signal
 
 class des_layout(object):
     '''
@@ -37,12 +38,16 @@ class des_layout(object):
         '''
         self.window = None
         self.user_manager = user_manager
+        self.jsnDrop = user_manager.jsnDrop
         self.layout = []
         self.components = {'components': False}
         self.controls = []
         self.figure_agg = None
         self.data_frame = pd.DataFrame()
         self.data_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "\data_source"
+        self.chat_count = 0
+        self.exit_event = threading.Event() 
+        signal.signal(signal.SIGINT, self.signal_handler)
     
     def self_layout(self, **kwargs):
         '''
@@ -50,7 +55,7 @@ class des_layout(object):
         '''
         sg.theme('Dark Blue 3')
         
-        self.components['chatbox'] = sg.Multiline('Chatbox', autoscroll=True, disabled=True, key='chatbox', size=(50,10))
+        self.components['chatbox'] = sg.Multiline('Chatbox', autoscroll=False, disabled=True, key='chatbox', size=(50,10))
         
         self.components['message'] = sg.Input('', key='message')
         
@@ -90,6 +95,66 @@ class des_layout(object):
         if self.figure_agg:
             self.figure_agg.get_tk_widget().forget()
         plt.close('all')
+        
+    def signal_handler(self, signum, frame):
+        '''
+        The function to set the handler for asynchronous events.
+        '''
+        self.exit_event.set()   
+
+    def set_up_chat_thread(self):
+        '''
+        The function to instatiate the chat thread.
+        '''
+        self.user_manager.chat_thread = Thread(target=self.chat_display_update,args=([self.user_manager]))
+        self.user_manager.chat_thread.setDaemon(True)
+        self.user_manager.stop_thread = False
+        self.user_manager.chat_thread.start()
+
+    def chat_display_update(self, user_manager):
+        '''
+        The function to update the chat display for the current des.
+        '''
+        time.sleep(2)
+
+        if self.window != None:
+            self.chat_count += 1
+            result = self.jsnDrop.select("tblChat",f"DESID = '{user_manager.current_screen}'")
+            
+            if result != "Data error. Nothing selected from tblChat":
+                messages = ""
+                sorted_chats = sorted(result,key = lambda i : i['Time'] )
+                for record in sorted_chats:
+                    new_display = ""
+                    if not (user_manager.latest_time is None):
+                        if record['Time'] > user_manager.latest_time:
+                            new_display = f"{record['PersonID']} : [{record['Chat']}]\n"
+                    else:
+                        new_display = f"{record['PersonID']} : [{record['Chat']}]\n"
+                    messages += new_display
+
+                user_manager.chat_list = [messages]
+                if len(user_manager.chat_list) > 5:
+                    user_manager.chat_list = user_manager.chat_list[:-5]
+                
+                # Makes a string of messages to update the display
+                Update_Messages = ""
+                for messages in user_manager.chat_list:
+                    Update_Messages += messages
+                
+                # Send the Event back to the window if we haven't already stopped
+                if not user_manager.stop_thread:
+
+                    # Time stamp the latest record
+                    if len(sorted_chats) > 1:
+                        latest_record = sorted_chats[:-1][0]
+                    else:
+                        latest_record = sorted_chats[0]
+                    user_manager.latest_time = latest_record['Time']
+
+                    # Send the event back to the window
+                    self.window.write_event_value('-CHATTHREAD-', Update_Messages)
+        # The Thread stops - no loop - when the event is caught by the Window it starts a new long task
     
     def render(self):
         '''
@@ -116,11 +181,19 @@ class des_layout(object):
                         data_plot = self.data_frame.plot(kind='line')
                         fig = plt.gcf()
                         self.figure_agg = self.draw_figure(self.window['-CANVAS-'].TKCanvas, fig)
-                        self.user_manager.current_screen = os.path.basename(file_path)
+                        self.user_manager.set_current_DES(os.path.basename(file_path))
+                        self.set_up_chat_thread()
                 if event == 'Upload CSV File':
                     file_path = sg.PopupGetFile('Please select a data source', file_types=(("CSV Files", "*.csv"),), initial_folder="C:\\")
                     if file_path:
                         if not glob.glob(self.data_path + "\{}".format(os.path.basename(file_path))):
                             shutil.copy(file_path, self.data_path)
+                if event == "Exit" :
+                    self.user_manager.stop_thread = True
+                elif event == "-CHATTHREAD-" and not self.user_manager.stop_thread:
+                    self.user_manager.stop_thread = True
+                    self.window['chatbox'].Update(values[event])
+                    if self.user_manager.stop_thread:
+                        self.user_manager.stop_thread = False
+                        self.set_up_chat_thread()
             self.window.close()
-            
