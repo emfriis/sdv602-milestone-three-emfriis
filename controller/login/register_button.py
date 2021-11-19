@@ -3,6 +3,9 @@ sys.dont_write_bytecode = True
 import PySimpleGUI as sg
 
 def register(event, values, state):
+    '''
+    This function opens a new window with the register gui.
+    '''
     from layout.register_layout import register_layout
     cont = True
     if event == 'Register':

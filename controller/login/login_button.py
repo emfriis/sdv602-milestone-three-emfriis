@@ -3,6 +3,10 @@ sys.dont_write_bytecode = True
 import PySimpleGUI as sg
 
 def login(event, values, state):
+    '''
+    This function logs a user in after validating their credentials with jsnDrop remote storage.
+    If the credentials are valid, a new window with the des gui is opened.
+    '''
     from layout.des_layout import des_layout
     cont = True
     if event == 'Log In':

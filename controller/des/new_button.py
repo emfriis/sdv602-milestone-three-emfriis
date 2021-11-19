@@ -3,6 +3,9 @@ sys.dont_write_bytecode = True
 import PySimpleGUI as sg
 
 def new(event, values, state, user_manager):
+    '''
+    This button opens a new window with another des gui.
+    '''
     from layout.des_layout import des_layout
     keep_going = True
     if event == 'New DES':
