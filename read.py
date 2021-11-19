@@ -28,22 +28,7 @@ result = jsnDrop.select("tblChat",f"DESID = '{user_manager.current_screen}'")
 print(result)
 messages = ""
 sorted_chats = sorted(result, key = lambda i : i['Time'] )
-print()
 print(sorted_chats)
-print()
-
-for record in sorted_chats:
-                    new_display = ""
-                    if not (user_manager.latest_time is None):
-                        # Only add if the record's time is after the latest_time
-                        if record['Time'] > user_manager.latest_time:
-                            new_display = f"{record['PersonID']} : [{record['Chat']}]\n"
-                    else: # Not entirely happy with this one - just what to do until there is a time?
-                        new_display = f"{record['PersonID']} : [{record['Chat']}]\n"
-                    messages += new_display
-user_manager.chat_list = [messages]
-
-print(user_manager.chat_list)
 
 
 
